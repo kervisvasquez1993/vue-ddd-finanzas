@@ -1,7 +1,8 @@
 # Sistema Financeiro
 
-Frontend em Vue 3 do sistema de gestão financeira. Segue DDD + Clean Architecture: as regras de
-negócio não dependem do Vue, e tudo o que é específico do framework fica em `presentation/`.
+Frontend em Vue 3 do sistema de gestão financeira. Segue DDD + Clean Architecture, organizado por
+módulos: as regras de negócio não dependem do Vue, e tudo o que é específico do framework fica em
+`presentation/`.
 
 ## Requisitos
 
@@ -37,20 +38,47 @@ npm run dev
 - Vue 3, vue-router e Pinia
 - `@tanstack/vue-query` para dados do servidor
 - VeeValidate e Zod para formulários
-- Axios atrás de um adapter em `infrastructure/api`
+- Axios atrás de um único adapter em `src/api`
 - Tailwind e vue-sonner
 - Vitest e `@vue/test-utils`
 
 ## Arquitetura
 
-O projeto é organizado em camadas, e **as dependências sempre apontam para dentro**: as camadas
+### Visão geral
+
+O código é dividido por **módulos de negócio**, e cada módulo tem as próprias camadas. O que é comum
+a todos fica fora deles: `api/` concentra o adapter HTTP, `shared/` guarda o código reutilizável, e
+`router/` e `layouts/` montam a aplicação.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  main.ts · router · layouts · pages                             │
+└───────┬────────────────┬────────────────┬────────────────┬──────┘
+        ▼                ▼                ▼                ▼
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│     auth     │ │  dashboard   │ │ transaction  │ │   category   │
+│              │ │              │ │              │ │              │
+│  camadas do  │ │  camadas do  │ │  camadas do  │ │  camadas do  │
+│    módulo    │ │    módulo    │ │    módulo    │ │    módulo    │
+└───────┬──────┘ └───────┬──────┘ └───────┬──────┘ └───────┬──────┘
+        ▼                ▼                ▼                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  api (adapter HTTP) · shared (componentes, erros e utilitários) │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+`pages/` ainda não existe: só é criada quando uma tela não tiver um módulo dono.
+
+### Camadas de um módulo
+
+Cada módulo é organizado em camadas, e **as dependências sempre apontam para dentro**: as camadas
 externas conhecem as internas, nunca o contrário. Assim, o núcleo de negócio não muda quando se troca
 o framework, a biblioteca HTTP ou a API.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  CAMADA EXTERNA: detalhes que podem mudar                        │
-│  presentation · router · infrastructure · di                     │
+│  presentation · infrastructure · di                              │
 │                                                                  │
 │     ┌────────────────────────────────────────────────────────┐   │
 │     │  APLICATION: casos de uso                              │   │
@@ -68,71 +96,85 @@ o framework, a biblioteca HTTP ou a API.
 |---|---|---|---|
 | `domain` | Regras de negócio e contratos | Entidades, value objects, erros, DTOs e portas (`ITransactionRepository`) | Não |
 | `aplication` | Orquestrar as regras | Casos de uso, como factories que recebem as portas | Não |
-| `infrastructure` | Falar com o mundo externo | Adapter do axios, actions, mappers e repositórios | Não |
-| `di` | Unir contratos e implementações | Instâncias dos casos de uso | Não |
+| `infrastructure` | Falar com o mundo externo | Actions, mappers e repositórios | Não |
+| `di.ts` | Unir contratos e implementações | Instâncias dos casos de uso | Não |
 | `presentation` | Mostrar e interagir | Queries, mutations, composables, componentes, schemas, stores e views | Sim |
-| `router` | Navegação | Rotas e guards | Sim |
 
-Se um arquivo importa o Vue ou uma biblioteca do Vue, ele fica em `presentation/` (ou em `router/`,
-quando se trata de navegação).
+Se um arquivo de um módulo importa o Vue ou uma biblioteca do Vue, ele fica em `presentation/`.
 
 ### Direção das dependências
 
+Dentro de um módulo:
+
 ```
-router ──► presentation ──► di ──► aplication ──► domain
-                            │                       ▲
-                            └──► infrastructure ────┘
+presentation ──► di.ts ──► aplication ──► domain
+                   │                        ▲
+                   └───► infrastructure ────┘
 ```
 
 | Camada | Pode importar |
 |---|---|
-| `domain` | Nada externo |
-| `aplication` | `domain` |
-| `infrastructure` | `domain` e suas próprias bibliotecas |
-| `di` | `aplication` e `infrastructure` |
-| `presentation` | `di`, `aplication` (tipos) e `domain` (tipos e classes de erro) |
-| `router` | `presentation` |
+| `domain` | `shared/domain` |
+| `aplication` | `domain` e `shared/domain` |
+| `infrastructure` | `domain`, `shared/domain` e `src/api` |
+| `di.ts` | `aplication` e `infrastructure` |
+| `presentation` | `di.ts`, `aplication` (tipos), `domain` (tipos e classes de erro), `shared` e o `index.ts` de outros módulos |
 
-`main.ts` é a exceção: por ser o ponto de partida, conhece todas as camadas.
+Entre as pastas de `src/`:
+
+```
+router · layouts · pages ──► modules ──► shared
+                                │          ▲
+                                └─► api ───┘
+```
+
+`shared/` e `api/` nunca importam de `modules/`. `main.ts` é a exceção: por ser o ponto de partida,
+conhece tudo.
 
 ### Inversão de dependências
 
 `aplication` depende do contrato definido em `domain`, não da implementação. Quem entrega a
-implementação é a pasta `di/`:
+implementação é o `di.ts` do módulo:
 
 ```ts
 export const getTransactionsUseCase = getTransactionsUseCaseFactory(transactionRepository)
 ```
 
 - **Inversão de dependências (o princípio):** o caso de uso conhece apenas `ITransactionRepository`.
-- **Injeção de dependências (o mecanismo):** `di/` entrega `transactionRepository` à factory. É o mesmo
+- **Injeção de dependências (o mecanismo):** `di.ts` entrega `transactionRepository` à factory. É o mesmo
   papel dos `providers` de um módulo NestJS.
 
 ### Estrutura de pastas
 
 ```
 src/
-├── domain/           Entidades, value objects, erros, DTOs e portas. TypeScript puro.
-├── aplication/       Casos de uso. TypeScript puro.
-├── infrastructure/   Implementa as portas: axios, actions, mappers e repositórios.
-├── di/               Conecta cada caso de uso à implementação da sua porta.
-├── presentation/     Tudo o que depende do Vue.
-│   ├── queries/      useQuery, query keys e política de novas tentativas
-│   ├── mutations/    useMutation
-│   ├── composables/  Lógica de tela
-│   ├── components/
-│   ├── schemas/      Validação de formulários com Zod
-│   ├── stores/       Pinia, apenas para estado global
-│   ├── utils/
-│   └── views/
-├── router/           Rotas e guards
-└── main.ts           Registra os plugins e conecta a sessão à API
+├── main.ts                 Registra os plugins e conecta a sessão à API
+├── App.vue                 Raiz: RouterView e Toaster
+├── assets/                 CSS global
+├── api/                    Adapter HTTP único: axios, authApi, publicApi e toDomainError
+├── router/                 Une as rotas dos módulos e define os guards
+├── layouts/                AppLayout, aplicado na rota pai
+├── shared/                 Código reutilizável, sem conhecer nenhum módulo
+│   ├── domain/             Erros, value objects e paginação
+│   └── presentation/       Componentes, composables, query roots e utils
+└── modules/
+    ├── auth/
+    ├── category/
+    ├── dashboard/
+    └── transaction/
+        ├── domain/         Entidades, value objects, erros, DTOs e portas
+        ├── aplication/     Casos de uso
+        ├── infrastructure/ Actions, interfaces, mappers e repositórios
+        ├── presentation/   Queries, mutations, composables, componentes, schemas e views
+        ├── di.ts           Conecta cada caso de uso à implementação da sua porta
+        ├── routes.ts       Rotas do módulo
+        └── index.ts        API pública, apenas se outro módulo precisar dela
 ```
 
 ### Fluxo de uma requisição
 
 ```
-View → composable → query/mutation → di → caso de uso → porta ← repositório → action → API
+View → composable → query/mutation → di.ts → caso de uso → porta ← repositório → action → API
 ```
 
 ### Erros
@@ -159,14 +201,46 @@ conhece o store: `main.ts` injeta os handlers com `configureApiAuth`.
 O token fica no `localStorage`, porque o backend o devolve no body. Não há refresh nem logout no
 servidor: encerrar a sessão apenas apaga o token local.
 
-## Como adicionar um módulo
+## Módulos
 
-1. **`domain/<module>`:** entidades, value objects, erros, DTOs e porta do repositório.
-2. **`infrastructure`:** interfaces do backend, mapper, actions e repositório.
-3. **`aplication/use-cases/<module>`:** factories que recebem a porta.
-4. **`di/<module>.ts`:** conecta cada factory ao seu repositório.
-5. **`presentation`:** query ou mutation, schema, composable, componentes e view.
-6. **`router/index.ts`:** rota com import dinâmico e seu `meta`.
+### API pública
+
+Um módulo só usa o que outro expõe em `index.ts`, nunca as pastas internas dele. Se ninguém precisa, o
+arquivo não existe. Hoje, `auth` expõe `useAuthStore` e `useLogout`, e `category` expõe
+`useCategoriesQuery`.
+
+`domain` e `infrastructure` não importam de outros módulos, porque o `index.ts` traz o Vue junto. Por
+isso `transaction` tem o próprio `TransactionCategoryNotFoundError`.
+
+Não pode haver ciclos entre módulos. Categorias e transações invalidam os dados uma da outra usando
+`queryRoots`, em `shared`, sem se importarem.
+
+### Telas de vários módulos
+
+- **Com um módulo principal:** a tela fica nesse módulo e pede o restante pelo `index.ts`.
+- **Sem dono claro:** vai para `src/pages/`, que apenas organiza peças exportadas pelos módulos. A pasta
+  ainda não existe: crie-a quando surgir o primeiro caso.
+
+### Submódulos
+
+Um submódulo fica em `modules/<module>/<submodule>/`, com as próprias camadas, quando tem contrato ou
+casos de uso próprios e só faz sentido junto do módulo pai.
+
+- No máximo um nível.
+- O filho conhece o pai, não o contrário.
+- Se outros módulos precisarem dele, transforme-o em módulo irmão.
+- Mais uma tela ou um componente não justificam um submódulo.
+
+### Como adicionar um módulo
+
+Em `src/modules/<module>/`:
+
+1. **`domain/`:** entidades, value objects, erros, DTOs e porta do repositório.
+2. **`infrastructure/`:** interfaces do backend, mapper, actions e repositório.
+3. **`aplication/use-cases/`:** factories que recebem a porta.
+4. **`di.ts`:** conecta cada factory ao seu repositório.
+5. **`presentation/`:** query ou mutation, schema, composable, componentes e view.
+6. **`routes.ts`:** rotas com import dinâmico, somadas em `src/router/index.ts`.
 
 Depois de uma mutation, invalide as queries afetadas. As transações usam
 `useInvalidateTransactionData`, porque alteram a própria lista, o dashboard e os totais por categoria.
@@ -179,6 +253,7 @@ Depois de uma mutation, invalide as queries afetadas. As transações usam
 | Lógica de tela | Composable | `use-login-form.ts` |
 | Estender um elemento interno | `inheritAttrs: false` + `useAttrs` | `FormField.vue` |
 | Personalizar uma parte da renderização | Slot nomeado | `PasswordField.vue` |
+| Layout compartilhado | Rota pai com `<RouterView />` | `AppLayout.vue` |
 | Tabela com células personalizadas | `DataTable` com scoped slots `#cell-<key>` | `CategoriesView.vue` |
 | Confirmar uma ação | `ConfirmDialog` + `useConfirmAction` | `CategoriesView.vue` |
 | Filtros compartilháveis | Estado na URL com `computed` gravável | `use-transaction-filters.ts` |
@@ -196,8 +271,8 @@ Depois de uma mutation, invalide as queries afetadas. As transações usam
 ## Testes
 
 Os testes ficam em `tests/`, com a mesma estrutura de `src/`. Por exemplo,
-`src/domain/shared/value-objects/date-range.vo.ts` é testado em
-`tests/domain/shared/value-objects/date-range.vo.spec.ts`.
+`src/shared/domain/value-objects/date-range.vo.ts` é testado em
+`tests/shared/domain/value-objects/date-range.vo.spec.ts`.
 
-Os casos de uso são testados com a factory e um repositório falso. Nos testes de views, o módulo de
-`di` é simulado.
+Os casos de uso são testados com a factory e um repositório falso. Nos testes de views, o `di.ts` do
+módulo é simulado.

@@ -1,5 +1,5 @@
 import type { NavigationGuard } from 'vue-router'
-import { useAuthStore } from '@/presentation/stores/auth.store'
+import { useAuthStore } from '@/modules/auth'
 
 declare module 'vue-router' {
   interface RouteMeta {

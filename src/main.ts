@@ -7,8 +7,8 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
 import router from './router'
-import { configureApiAuth } from './infrastructure/api/api-auth'
-import { useAuthStore } from './presentation/stores/auth.store'
+import { configureApiAuth } from './api/api-auth'
+import { useAuthStore } from './modules/auth'
 
 const app = createApp(App)
 

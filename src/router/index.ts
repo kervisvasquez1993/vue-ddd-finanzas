@@ -1,4 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import AppLayout from '@/layouts/AppLayout.vue'
+import { authRoutes } from '@/modules/auth/routes'
+import { categoryRoutes } from '@/modules/category/routes'
+import { dashboardRoutes } from '@/modules/dashboard/routes'
+import { transactionRoutes } from '@/modules/transaction/routes'
 import { authGuard } from './guards'
 
 const router = createRouter({
@@ -6,66 +11,11 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'dashboard',
+      component: AppLayout,
       meta: { requiresAuth: true },
-      component: () => import('@/presentation/views/dashboard/DashboardView.vue'),
+      children: [...dashboardRoutes, ...transactionRoutes, ...categoryRoutes],
     },
-    {
-      path: '/transactions',
-      meta: { requiresAuth: true },
-      children: [
-        {
-          path: '',
-          name: 'transactions',
-          component: () => import('@/presentation/views/transaction/TransactionsView.vue'),
-        },
-        {
-          path: 'new',
-          name: 'transactions-create',
-          component: () => import('@/presentation/views/transaction/CreateTransactionView.vue'),
-        },
-        {
-          path: ':id/edit',
-          name: 'transactions-edit',
-          props: true,
-          component: () => import('@/presentation/views/transaction/EditTransactionView.vue'),
-        },
-      ],
-    },
-    {
-      path: '/categories',
-      meta: { requiresAuth: true },
-      children: [
-        {
-          path: '',
-          name: 'categories',
-          component: () => import('@/presentation/views/category/CategoriesView.vue'),
-        },
-        {
-          path: 'new',
-          name: 'categories-create',
-          component: () => import('@/presentation/views/category/CreateCategoryView.vue'),
-        },
-        {
-          path: ':id/edit',
-          name: 'categories-edit',
-          props: true,
-          component: () => import('@/presentation/views/category/EditCategoryView.vue'),
-        },
-      ],
-    },
-    {
-      path: '/login',
-      name: 'login',
-      meta: { guestOnly: true },
-      component: () => import('@/presentation/views/auth/LoginView.vue'),
-    },
-    {
-      path: '/register',
-      name: 'register',
-      meta: { guestOnly: true },
-      component: () => import('@/presentation/views/auth/RegisterView.vue'),
-    },
+    ...authRoutes,
   ],
 })
 

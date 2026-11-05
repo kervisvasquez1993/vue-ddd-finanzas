@@ -5,9 +5,13 @@ Para crear módulos usa la skill `vue-ddd-module`, que sigue esta misma estructu
 
 ## Reglas clave
 
+- El código vive en `src/modules/<module>/`, con `domain`, `aplication`, `infrastructure`,
+  `presentation`, `di.ts` y `routes.ts`.
 - `domain/` y `aplication/` son agnósticos: no importan `vue`, librerías de Vue ni `infrastructure/`.
-- Si un archivo importa Vue o una librería de Vue, va en `presentation/`.
-- `presentation/` obtiene los casos de uso desde `src/di/`.
+- Dentro de un módulo, si un archivo importa Vue o una librería de Vue, va en `presentation/`.
+- `presentation/` obtiene los casos de uso desde el `di.ts` de su módulo.
+- Un módulo solo usa lo que otro expone en `index.ts`. `shared/` y `api/` no importan de `modules/`.
+- Hay un solo adapter HTTP, en `src/api/`.
 - Los repositorios traducen errores con `toDomainError`. `presentation` decide por la clase del
   error, nunca por códigos HTTP.
 - Los tests van en `tests/`, espejando `src/`.
