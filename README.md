@@ -51,23 +51,81 @@ a todos fica fora deles: `api/` concentra o adapter HTTP, `shared/` guarda o có
 `router/` e `layouts/` montam a aplicação.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  main.ts · router · layouts · pages                             │
-└───────┬────────────────┬────────────────┬────────────────┬──────┘
-        ▼                ▼                ▼                ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│     auth     │ │  dashboard   │ │ transaction  │ │   category   │
-│              │ │              │ │              │ │              │
-│  camadas do  │ │  camadas do  │ │  camadas do  │ │  camadas do  │
-│    módulo    │ │    módulo    │ │    módulo    │ │    módulo    │
-└───────┬──────┘ └───────┬──────┘ └───────┬──────┘ └───────┬──────┘
-        ▼                ▼                ▼                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  api (adapter HTTP) · shared (componentes, erros e utilitários) │
-└─────────────────────────────────────────────────────────────────┘
+┌─ main.ts ──────┐ ┌─ router/ ──────┐ ┌─ layouts/ ─────┐ ┌─ pages/ ───────┐
+│ plugins        │ │ index.ts       │ │ AppLayout      │ │ telas sem      │
+│ sessão e API   │ │ guards.ts      │ │                │ │ módulo dono    │
+│                │ │                │ │                │ │ (quando surgir)│
+└────────┬───────┘ └────────┬───────┘ └────────┬───────┘ └────────┬───────┘
+         ▼                  ▼                  ▼                  ▼
+┌────────────────┐ ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
+│      AUTH      │ │   DASHBOARD    │ │  TRANSACTION   │ │    CATEGORY    │
+├────────────────┤ ├────────────────┤ ├────────────────┤ ├────────────────┤
+│ presentation   │ │ presentation   │ │ presentation   │ │ presentation   │
+│ di.ts          │ │ di.ts          │ │ di.ts          │ │ di.ts          │
+│ aplication     │ │ aplication     │ │ aplication     │ │ aplication     │
+│ infrastructure │ │ infrastructure │ │ infrastructure │ │ infrastructure │
+│ domain         │ │ domain         │ │ domain         │ │ domain         │
+└────────┬───────┘ └────────┬───────┘ └────────┬───────┘ └────────┬───────┘
+         └─┬────────────────┴────────┬─────────┴───────────────┬──┘
+           ▼                         ▼                         ▼
+┌─ api/ ──────────────┐   ┌─ shared/domain/ ────┐   ┌─ shared/presentation┐
+│ api.ts (authApi,    │   │ errors/             │   │ components/         │
+│ publicApi)          │   │ value-objects/      │   │ composables/        │
+│ api.factory.ts      │   │ pagination/         │   │ queries/            │
+│ api-auth.ts         │   │                     │   │ utils/              │
+│ http-error.ts       │   │                     │   │                     │
+│ adapters/           │   │                     │   │                     │
+└─────────────────────┘   └─────────────────────┘   └─────────────────────┘
 ```
 
-`pages/` ainda não existe: só é criada quando uma tela não tiver um módulo dono.
+| Pasta | O que contém | Quem usa |
+|---|---|---|
+| `main.ts` | Registro dos plugins e ligação da sessão com a API | Ponto de partida |
+| `router/` | `index.ts`, que une as rotas dos módulos, e `guards.ts` | `main.ts` |
+| `layouts/` | `AppLayout`, com o menu e o usuário, aplicado na rota pai | `router/` |
+| `pages/` | Telas sem módulo dono. Só é criada quando surgir o primeiro caso | `router/` |
+| `api/` | Cliente HTTP único: `authApi`, `publicApi`, adapter do axios e `toDomainError` | `infrastructure` de cada módulo e `main.ts` |
+| `shared/domain/` | `errors`, `value-objects` (`Email`, `DateRange`, `CalendarDate`) e `pagination` | Todas as camadas dos módulos e `api/` |
+| `shared/presentation/` | `components` (`AsyncGuard`, `DataTable`, `FormField`...), `composables`, `queries` (`queryRoots`, `shouldRetryQuery`) e `utils` | `presentation` e `layouts/` |
+
+### Dentro de um módulo
+
+Tomando `transaction` como exemplo, cada pasta tem uma responsabilidade e as setas mostram quem
+depende de quem. `infrastructure` implementa a porta definida em `domain`, e `aplication` só conhece
+essa porta: quem junta as duas é o `di.ts`.
+
+```
+┌─ presentation/ (depende do Vue) ────────────────────────────────────────┐
+│ views         Transactions, CreateTransaction, EditTransaction          │
+│ components    TransactionForm, TransactionFilters                       │
+│ composables   useTransactionList, useTransactionForm                    │
+│ queries       useTransactionsQuery, transactionKeys                     │
+│ mutations     useCreateTransactionMutation                              │
+│ schemas       transactionSchema (Zod)                                   │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     ▼
+┌─ di.ts (une contratos e implementações) ────────────────────────────────┐
+│               getTransactionsUseCaseFactory(transactionRepository)      │
+└─────────────────┬──────────────────────────────────────┬────────────────┘
+                  ▼                                      ▼
+┌─ aplication/ ────────────────────┐   ┌─ infrastructure/ ────────────────┐
+│ use-cases     get, create        │   │ repositories  ...RepositoryImpl  │
+│               update, delete     │   │ mappers       TransactionMapper  │
+│                                  │   │ actions       get, create...     │
+│                                  │   │ interfaces    tipos do backend   │
+└─────────────────┬────────────────┘   └─────────────────┬────────────────┘
+                  ▼                                      ▼
+┌─ domain/ (núcleo sem dependências) ─────────────────────────────────────┐
+│ entities      TransactionEntity                                         │
+│ value-objects TransactionDraft                                          │
+│ repositories  ITransactionRepository (porta)                            │
+│ errors        TransactionNotFoundError                                  │
+│ dto           ITransactionInput, ITransactionFilters                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+Além das camadas, o módulo tem `routes.ts`, com as próprias rotas, e `index.ts` quando outro módulo
+precisa usar algo dele.
 
 ### Camadas de um módulo
 
