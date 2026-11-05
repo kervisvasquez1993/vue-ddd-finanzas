@@ -11,6 +11,28 @@ const router = createRouter({
       component: () => import('@/presentation/views/dashboard/DashboardView.vue'),
     },
     {
+      path: '/categories',
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'categories',
+          component: () => import('@/presentation/views/category/CategoriesView.vue'),
+        },
+        {
+          path: 'new',
+          name: 'categories-create',
+          component: () => import('@/presentation/views/category/CreateCategoryView.vue'),
+        },
+        {
+          path: ':id/edit',
+          name: 'categories-edit',
+          props: true,
+          component: () => import('@/presentation/views/category/EditCategoryView.vue'),
+        },
+      ],
+    },
+    {
       path: '/login',
       name: 'login',
       meta: { guestOnly: true },

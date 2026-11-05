@@ -34,6 +34,7 @@ const mountView = async () => {
     routes: [
       { path: '/', name: 'dashboard', component: { template: '<div />' } },
       { path: '/login', name: 'login', component: { template: '<div />' } },
+      { path: '/categories', name: 'categories', component: { template: '<div />' } },
     ],
   })
   await router.push('/')

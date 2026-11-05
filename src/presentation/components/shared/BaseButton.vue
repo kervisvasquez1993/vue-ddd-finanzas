@@ -1,12 +1,17 @@
 <script setup lang="ts">
-defineProps<{ loading?: boolean; disabled?: boolean }>()
+import type { Component } from 'vue'
+
+withDefaults(defineProps<{ as?: string | Component; loading?: boolean; disabled?: boolean }>(), {
+  as: 'button',
+})
 </script>
 
 <template>
-  <button
-    class="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+  <component
+    :is="as"
+    class="inline-block rounded-lg bg-slate-900 px-4 py-2 text-center font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
     :disabled="loading || disabled"
   >
     <slot />
-  </button>
+  </component>
 </template>

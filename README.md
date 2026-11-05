@@ -127,6 +127,9 @@ transacción debe invalidar `dashboardKeys.all`.
 | Lógica de pantalla | Composable | `use-login-form.ts` |
 | Extender un elemento interno | `inheritAttrs: false` + `useAttrs` | `FormField.vue` |
 | Personalizar una parte del render | Slot con nombre | `PasswordField.vue` |
+| Tabla con celdas personalizadas | `DataTable` con scoped slots `#cell-<key>` | `CategoriesView.vue` |
+| Confirmar una acción | `ConfirmDialog` con `Teleport` y `v-model:open` | `CategoriesView.vue` |
+| Cambiar el elemento renderizado | Prop `as` con `<component :is>` | `BaseButton.vue` |
 
 ## Tests
 
