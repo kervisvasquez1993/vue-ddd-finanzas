@@ -11,6 +11,7 @@ const category = new CategoryEntity({ id: 'c1', name: 'Fornecedor', description:
 
 describe('casos de uso de categorías', () => {
   const repo = {
+    findAll: vi.fn<ICategoryRepository['findAll']>(),
     findSummaries: vi.fn<ICategoryRepository['findSummaries']>(),
     findById: vi.fn<ICategoryRepository['findById']>(),
     create: vi.fn<ICategoryRepository['create']>(),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { InvalidDateRangeError } from '@/domain/shared/errors'
+import { InvalidDateError, InvalidDateRangeError } from '@/domain/shared/errors'
 import { DateRange } from '@/domain/shared/value-objects'
 
 describe('DateRange', () => {
@@ -20,12 +20,12 @@ describe('DateRange', () => {
   })
 
   it.each(['2026-02-30', '2026-13-01', '01/06/2026', '2026-6-1'])('rechaza %s', (startDate) => {
-    expect(() => DateRange.create({ startDate })).toThrow(InvalidDateRangeError)
+    expect(() => DateRange.create({ startDate })).toThrow(InvalidDateError)
   })
 
   it('acepta el 29 de febrero solo en año bisiesto', () => {
     expect(() => DateRange.create({ startDate: '2028-02-29' })).not.toThrow()
-    expect(() => DateRange.create({ startDate: '2026-02-29' })).toThrow(InvalidDateRangeError)
+    expect(() => DateRange.create({ startDate: '2026-02-29' })).toThrow(InvalidDateError)
   })
 
   it('rechaza un inicio posterior al fin', () => {

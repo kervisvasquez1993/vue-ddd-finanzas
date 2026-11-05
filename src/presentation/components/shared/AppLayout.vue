@@ -10,6 +10,7 @@ const logout = useLogout()
 
 const links = [
   { name: 'dashboard', label: 'Resumen' },
+  { name: 'transactions', label: 'Transacciones' },
   { name: 'categories', label: 'Categorías' },
 ]
 </script>

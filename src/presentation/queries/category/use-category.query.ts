@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
-import { getCategoryUseCase } from '@/composition/category'
+import { getCategoryUseCase } from '@/di/category'
 import { shouldRetryQuery } from '../should-retry-query'
 import { categoryKeys } from './category.keys'
 

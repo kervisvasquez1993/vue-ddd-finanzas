@@ -4,7 +4,7 @@ import FormField from './FormField.vue'
 
 defineProps<{ label: string; error?: string }>()
 
-const model = defineModel<string>()
+const model = defineModel<string | number>()
 const isVisible = ref(false)
 </script>
 

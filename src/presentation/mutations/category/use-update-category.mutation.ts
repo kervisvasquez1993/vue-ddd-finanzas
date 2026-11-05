@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { updateCategoryUseCase } from '@/composition/category'
+import { updateCategoryUseCase } from '@/di/category'
 import { categoryKeys } from '@/presentation/queries/category'
 import { dashboardKeys } from '@/presentation/queries/dashboard'
+import { transactionKeys } from '@/presentation/queries/transaction'
 
 export const useUpdateCategoryMutation = () => {
   const queryClient = useQueryClient()
@@ -11,8 +12,9 @@ export const useUpdateCategoryMutation = () => {
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: categoryKeys.all }),
-        // El dashboard muestra los nombres de las categorías con más salidas.
+        // El dashboard y las transacciones muestran el nombre de la categoría.
         queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+        queryClient.invalidateQueries({ queryKey: transactionKeys.all }),
       ]),
   })
 }

@@ -3,11 +3,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { getDashboardUseCase } from '@/composition/dashboard'
+import { getDashboardUseCase } from '@/di/dashboard'
 import { DashboardSummaryEntity, type DashboardSummaryProps } from '@/domain/dashboard/entities'
 import DashboardView from '@/presentation/views/dashboard/DashboardView.vue'
 
-vi.mock('@/composition/dashboard')
+vi.mock('@/di/dashboard')
 
 const period = { startDate: '2026-06-01', endDate: '2026-06-30' }
 
@@ -35,6 +35,12 @@ const mountView = async () => {
       { path: '/', name: 'dashboard', component: { template: '<div />' } },
       { path: '/login', name: 'login', component: { template: '<div />' } },
       { path: '/categories', name: 'categories', component: { template: '<div />' } },
+      { path: '/transactions', name: 'transactions', component: { template: '<div />' } },
+      {
+        path: '/transactions/new',
+        name: 'transactions-create',
+        component: { template: '<div />' },
+      },
     ],
   })
   await router.push('/')

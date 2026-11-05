@@ -7,7 +7,7 @@ Para crear módulos usa la skill `vue-ddd-module`, que sigue esta misma estructu
 
 - `domain/` y `aplication/` son agnósticos: no importan `vue`, librerías de Vue ni `infrastructure/`.
 - Si un archivo importa Vue o una librería de Vue, va en `presentation/`.
-- `presentation/` obtiene los casos de uso desde `src/composition/`.
+- `presentation/` obtiene los casos de uso desde `src/di/`.
 - Los repositorios traducen errores con `toDomainError`. `presentation` decide por la clase del
   error, nunca por códigos HTTP.
 - Los tests van en `tests/`, espejando `src/`.

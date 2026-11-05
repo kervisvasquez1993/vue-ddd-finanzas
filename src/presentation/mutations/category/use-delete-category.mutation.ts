@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { deleteCategoryUseCase } from '@/composition/category'
+import { deleteCategoryUseCase } from '@/di/category'
 import { categoryKeys } from '@/presentation/queries/category'
 
 export const useDeleteCategoryMutation = () => {

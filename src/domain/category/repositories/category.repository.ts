@@ -2,6 +2,7 @@ import type { ICreateCategoryRequest, IUpdateCategoryRequest } from '@/domain/ca
 import type { CategoryEntity, CategorySummaryEntity } from '@/domain/category/entities'
 
 export interface ICategoryRepository {
+  findAll(): Promise<CategoryEntity[]>
   findSummaries(): Promise<CategorySummaryEntity[]>
   findById(id: string): Promise<CategoryEntity>
   create(data: ICreateCategoryRequest): Promise<CategoryEntity>

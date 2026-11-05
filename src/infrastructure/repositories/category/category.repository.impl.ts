@@ -8,6 +8,7 @@ import type { ICategoryRepository } from '@/domain/category/repositories'
 import {
   createCategoryAction,
   deleteCategoryAction,
+  getCategoriesAction,
   getCategoryByIdAction,
   getCategorySummariesAction,
   updateCategoryAction,
@@ -19,6 +20,14 @@ const notFound = () => new CategoryNotFoundError()
 const nameTaken = () => new CategoryNameAlreadyExistsError()
 
 export class CategoryRepositoryImpl implements ICategoryRepository {
+  async findAll() {
+    try {
+      return (await getCategoriesAction()).map(CategoryMapper.toEntity)
+    } catch (error) {
+      throw toDomainError(error)
+    }
+  }
+
   async findSummaries() {
     try {
       return (await getCategorySummariesAction()).map(CategoryMapper.toSummaryEntity)

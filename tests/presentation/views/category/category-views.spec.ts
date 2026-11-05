@@ -11,7 +11,7 @@ import {
   getCategorySummariesUseCase,
   getCategoryUseCase,
   updateCategoryUseCase,
-} from '@/composition/category'
+} from '@/di/category'
 import { CategoryEntity, CategorySummaryEntity } from '@/domain/category/entities'
 import {
   CategoryHasTransactionsError,
@@ -22,7 +22,7 @@ import CategoriesView from '@/presentation/views/category/CategoriesView.vue'
 import CreateCategoryView from '@/presentation/views/category/CreateCategoryView.vue'
 import EditCategoryView from '@/presentation/views/category/EditCategoryView.vue'
 
-vi.mock('@/composition/category')
+vi.mock('@/di/category')
 vi.mock('vue-sonner', () => ({
   toast: { success: vi.fn<(message: string) => void>(), error: vi.fn<(message: string) => void>() },
 }))
@@ -55,6 +55,7 @@ const mountView = async (view: Component, props = {}) => {
       { path: '/', name: 'dashboard', component: stub },
       { path: '/login', name: 'login', component: stub },
       { path: '/categories', name: 'categories', component: stub },
+      { path: '/transactions', name: 'transactions', component: stub },
       { path: '/categories/new', name: 'categories-create', component: stub },
       { path: '/categories/:id/edit', name: 'categories-edit', component: stub },
     ],

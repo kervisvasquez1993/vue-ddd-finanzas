@@ -1,19 +1,8 @@
 import { InvalidDateRangeError } from '@/domain/shared/errors'
+import { CalendarDate } from './calendar-date.vo'
 
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
-
-/** El backend responde 500 con fechas que no existen (2026-02-30), así que se rechazan aquí. */
-const isRealDate = (value: string) => {
-  if (!DATE_PATTERN.test(value)) return false
-  const date = new Date(`${value}T00:00:00Z`)
-  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value)
-}
-
-const normalize = (value?: string | null) => {
-  if (!value) return undefined
-  if (!isRealDate(value)) throw new InvalidDateRangeError(`Fecha inválida: ${value}`)
-  return value
-}
+const normalize = (value?: string | null) =>
+  value ? CalendarDate.create(value).toString() : undefined
 
 export class DateRange {
   readonly startDate?: string

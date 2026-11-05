@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/vue-query'
-import { getCategorySummariesUseCase } from '@/composition/category'
+import { getCategorySummariesUseCase } from '@/di/category'
 import { shouldRetryQuery } from '../should-retry-query'
 import { categoryKeys } from './category.keys'
 

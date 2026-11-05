@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getDashboardUseCaseFactory } from '@/aplication/use-cases/dashboard'
 import type { DashboardSummaryEntity } from '@/domain/dashboard/entities'
 import type { IDashboardRepository } from '@/domain/dashboard/repositories'
-import { InvalidDateRangeError } from '@/domain/shared/errors'
+import { InvalidDateError } from '@/domain/shared/errors'
 
 describe('getDashboardUseCase', () => {
   const repo = { getSummary: vi.fn<IDashboardRepository['getSummary']>() }
@@ -21,7 +21,7 @@ describe('getDashboardUseCase', () => {
   it('no llama al backend con una fecha inexistente', async () => {
     await expect(
       getDashboardUseCaseFactory(repo)({ startDate: '2026-02-30' }),
-    ).rejects.toBeInstanceOf(InvalidDateRangeError)
+    ).rejects.toBeInstanceOf(InvalidDateError)
     expect(repo.getSummary).not.toHaveBeenCalled()
   })
 })

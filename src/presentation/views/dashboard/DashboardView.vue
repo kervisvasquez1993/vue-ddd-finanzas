@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import DashboardSkeleton from '@/presentation/components/dashboard/DashboardSkeleton.vue'
 import PeriodFilter from '@/presentation/components/dashboard/PeriodFilter.vue'
 import SummaryCard from '@/presentation/components/dashboard/SummaryCard.vue'
 import TopCategoriesChart from '@/presentation/components/dashboard/TopCategoriesChart.vue'
 import AppLayout from '@/presentation/components/shared/AppLayout.vue'
 import AsyncGuard from '@/presentation/components/shared/AsyncGuard.vue'
+import BaseButton from '@/presentation/components/shared/BaseButton.vue'
 import { useDashboard } from '@/presentation/composables/dashboard/use-dashboard'
 import { formatCurrency } from '@/presentation/utils/format-currency'
 
@@ -24,7 +26,12 @@ const {
 
 <template>
   <AppLayout>
-    <h1 class="text-2xl font-semibold text-slate-900">Resumen</h1>
+    <header class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-2xl font-semibold text-slate-900">Resumen</h1>
+      <BaseButton :as="RouterLink" :to="{ name: 'transactions-create' }">
+        Nueva transacción
+      </BaseButton>
+    </header>
 
     <PeriodFilter v-model="filters" :loading="isFetching" />
 
@@ -53,7 +60,7 @@ const {
           <SummaryCard label="Total de salidas" :value="formatCurrency(data.totalSaidas)" />
         </div>
 
-        <TopCategoriesChart :categories="data.topCategoriasSaidas" />
+        <TopCategoriesChart :categories="data.topCategoriasSaidas" :period="data.periodo" />
       </template>
     </AsyncGuard>
   </AppLayout>

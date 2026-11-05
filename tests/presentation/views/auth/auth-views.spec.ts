@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { loginUseCase, registerUseCase } from '@/composition/auth'
+import { loginUseCase, registerUseCase } from '@/di/auth'
 import { UserEntity } from '@/domain/auth/entities'
 import { EmailAlreadyRegisteredError, InvalidCredentialsError } from '@/domain/auth/errors'
 import { ServiceUnavailableError } from '@/domain/shared/errors'
@@ -14,7 +14,7 @@ import { useAuthStore } from '@/presentation/stores/auth.store'
 import LoginView from '@/presentation/views/auth/LoginView.vue'
 import RegisterView from '@/presentation/views/auth/RegisterView.vue'
 
-vi.mock('@/composition/auth')
+vi.mock('@/di/auth')
 vi.mock('vue-sonner', () => ({
   toast: { success: vi.fn<(message: string) => void>(), error: vi.fn<(message: string) => void>() },
 }))

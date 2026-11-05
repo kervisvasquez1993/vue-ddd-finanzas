@@ -11,6 +11,28 @@ const router = createRouter({
       component: () => import('@/presentation/views/dashboard/DashboardView.vue'),
     },
     {
+      path: '/transactions',
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'transactions',
+          component: () => import('@/presentation/views/transaction/TransactionsView.vue'),
+        },
+        {
+          path: 'new',
+          name: 'transactions-create',
+          component: () => import('@/presentation/views/transaction/CreateTransactionView.vue'),
+        },
+        {
+          path: ':id/edit',
+          name: 'transactions-edit',
+          props: true,
+          component: () => import('@/presentation/views/transaction/EditTransactionView.vue'),
+        },
+      ],
+    },
+    {
       path: '/categories',
       meta: { requiresAuth: true },
       children: [

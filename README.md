@@ -48,7 +48,7 @@ src/
 ├── domain/           Entidades, value objects, errores, DTOs y puertos. TypeScript puro.
 ├── aplication/       Casos de uso. TypeScript puro.
 ├── infrastructure/   Implementa los puertos: axios, actions, mappers, repositorios.
-├── composition/      Conecta los casos de uso con sus repositorios.
+├── di/               Conecta cada caso de uso con la implementación de su puerto.
 ├── presentation/     Todo lo que depende de Vue.
 │   ├── queries/      useQuery, query keys y política de reintentos
 │   ├── mutations/    useMutation
@@ -69,8 +69,8 @@ src/
 | `domain` | Nada externo |
 | `aplication` | `domain` |
 | `infrastructure` | `domain` y sus propias librerías |
-| `composition` | `aplication` e `infrastructure` |
-| `presentation` | `composition`, `aplication` (tipos) y `domain` |
+| `di` | `aplication` e `infrastructure` |
+| `presentation` | `di`, `aplication` (tipos) y `domain` |
 | `router` | `presentation` |
 
 Si un archivo importa Vue o una librería de Vue, va en `presentation`.
@@ -80,7 +80,7 @@ Si un archivo importa Vue o una librería de Vue, va en `presentation`.
 ### Flujo de una petición
 
 ```
-View → composable → query/mutation → composition → caso de uso → puerto ← repositorio → action → API
+View → composable → query/mutation → di → caso de uso → puerto ← repositorio → action → API
 ```
 
 ### Errores
@@ -112,12 +112,12 @@ logout en el servidor: cerrar sesión solo borra el token local.
 1. **`domain/<module>`:** entidades, value objects, errores, DTOs y puerto del repositorio.
 2. **`infrastructure`:** interfaces del backend, mapper, actions y repositorio.
 3. **`aplication/use-cases/<module>`:** factories que reciben el puerto.
-4. **`composition/<module>.ts`:** conecta cada factory con su repositorio.
+4. **`di/<module>.ts`:** conecta cada factory con su repositorio.
 5. **`presentation`:** query o mutation, schema, composable, componentes y view.
 6. **`router/index.ts`:** ruta con import dinámico y su `meta`.
 
-Después de una mutation, invalida las queries afectadas. Por ejemplo, crear, editar o eliminar una
-transacción debe invalidar `dashboardKeys.all`.
+Después de una mutation, invalida las queries afectadas. Las transacciones usan
+`useInvalidateTransactionData`, porque cambian su lista, el dashboard y los totales por categoría.
 
 ## Patrones de componentes
 
@@ -128,8 +128,16 @@ transacción debe invalidar `dashboardKeys.all`.
 | Extender un elemento interno | `inheritAttrs: false` + `useAttrs` | `FormField.vue` |
 | Personalizar una parte del render | Slot con nombre | `PasswordField.vue` |
 | Tabla con celdas personalizadas | `DataTable` con scoped slots `#cell-<key>` | `CategoriesView.vue` |
-| Confirmar una acción | `ConfirmDialog` con `Teleport` y `v-model:open` | `CategoriesView.vue` |
+| Confirmar una acción | `ConfirmDialog` + `useConfirmAction` | `CategoriesView.vue` |
+| Filtros compartibles | Estado en la URL con `computed` escribible | `use-transaction-filters.ts` |
 | Cambiar el elemento renderizado | Prop `as` con `<component :is>` | `BaseButton.vue` |
+
+## Limitaciones conocidas
+
+- **Categoría de una transacción:** `PATCH /transactions/:id` responde `200` con el `categoryId` nuevo, pero no lo
+  guarda. Por eso el formulario de edición la bloquea y `getChanges` nunca la envía. Al corregirse en el backend, hay que
+  agregar `categoryId` a `IUpdateTransactionRequest` y a `getChanges`, y habilitar el campo.
+- **Búsqueda:** `%` y `_` funcionan como comodines en el backend.
 
 ## Tests
 
@@ -138,4 +146,4 @@ Los tests viven en `tests/`, con la misma estructura de `src/`. Por ejemplo,
 `tests/domain/shared/value-objects/date-range.vo.spec.ts`.
 
 Los casos de uso se prueban con la factory y un repositorio falso. En los tests de views se simula
-el módulo de `composition`.
+el módulo de `di`.
