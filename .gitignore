@@ -45,3 +45,7 @@ playwright-report/
 
 # Contexto local para skills (no versionar)
 skill-context/
+
+# Variables de entorno
+.env
+!.env.example

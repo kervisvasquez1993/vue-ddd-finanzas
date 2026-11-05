@@ -14,7 +14,7 @@
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "oxfmt src/"
+    "format": "oxfmt src/ tests/"
   },
   "dependencies": {
     "@tanstack/vue-query": "^5.106.1",

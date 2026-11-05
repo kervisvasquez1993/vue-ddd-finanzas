@@ -1,8 +1,8 @@
 import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApiClient } from '../api.factory'
-import { configureApiAuth } from '../api-auth'
-import { rawBackendMessage } from '../http-error'
+import { createApiClient } from '@/infrastructure/api/api.factory'
+import { configureApiAuth } from '@/infrastructure/api/api-auth'
+import { rawBackendMessage } from '@/infrastructure/api/http-error'
 
 const respond = (config: InternalAxiosRequestConfig, data: unknown): AxiosResponse => ({
   data,

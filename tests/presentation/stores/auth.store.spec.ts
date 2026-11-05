@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { UserEntity } from '@/domain/auth/entities'
 import { Email } from '@/domain/shared/value-objects'
-import { useAuthStore } from '../auth.store'
+import { useAuthStore } from '@/presentation/stores/auth.store'
 
 const user = new UserEntity({
   id: 1,
