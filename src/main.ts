@@ -1,5 +1,9 @@
+import './assets/main.css'
+import 'vue-sonner/style.css'
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
 import router from './router'
@@ -9,12 +13,16 @@ import { useAuthStore } from './presentation/stores/auth.store'
 const app = createApp(App)
 
 app.use(createPinia())
+app.use(VueQueryPlugin)
 app.use(router)
 
 const authStore = useAuthStore()
 configureApiAuth({
   getAccessToken: () => authStore.accessToken,
-  onUnauthorized: () => authStore.clearSession(),
+  onUnauthorized: () => {
+    authStore.clearSession()
+    router.push({ name: 'login' })
+  },
 })
 
 app.mount('#app')

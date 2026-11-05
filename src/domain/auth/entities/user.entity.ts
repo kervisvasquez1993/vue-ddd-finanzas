@@ -1,10 +1,9 @@
 import type { Email } from '@/domain/shared/value-objects'
 
 export interface UserEntityProps {
-  id: number
-  email: Email
+  id: string
   name: string
-  role: string
+  email: Email
 }
 
 export class UserEntity {
@@ -18,15 +17,11 @@ export class UserEntity {
     return this.props.id
   }
 
-  get email() {
-    return this.props.email
-  }
-
   get name() {
     return this.props.name
   }
 
-  get role() {
-    return this.props.role
+  get email() {
+    return this.props.email
   }
 }

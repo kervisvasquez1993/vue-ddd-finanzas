@@ -7,10 +7,9 @@ import { Email } from '@/domain/shared/value-objects'
 const STORAGE_KEY = 'auth-storage'
 
 interface PersistedUser {
-  id: number
-  email: string
+  id: string
   name: string
-  role: string
+  email: string
 }
 
 interface PersistedSession {
@@ -20,17 +19,15 @@ interface PersistedSession {
 
 const toPersistedUser = (user: UserEntity): PersistedUser => ({
   id: user.id,
-  email: user.email.toString(),
   name: user.name,
-  role: user.role,
+  email: user.email.toString(),
 })
 
 const toUserEntity = (user: PersistedUser) =>
   new UserEntity({
     id: user.id,
-    email: Email.create(user.email),
     name: user.name,
-    role: user.role,
+    email: Email.create(user.email),
   })
 
 const readPersistedSession = () => {

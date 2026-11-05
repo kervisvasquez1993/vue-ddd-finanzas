@@ -2,7 +2,7 @@ import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApiClient } from '@/infrastructure/api/api.factory'
 import { configureApiAuth } from '@/infrastructure/api/api-auth'
-import { rawBackendMessage } from '@/infrastructure/api/http-error'
+import { normalizeHttpError } from '@/infrastructure/api/http-error'
 
 const respond = (config: InternalAxiosRequestConfig, data: unknown): AxiosResponse => ({
   data,
@@ -59,14 +59,20 @@ describe('createApiClient', () => {
   })
 })
 
-describe('rawBackendMessage', () => {
-  it('une los mensajes de validación', () => {
-    const error = { response: { data: { message: ['uno', 'dos'] } } }
+describe('normalizeHttpError', () => {
+  it('conserva la lista de mensajes de validación', () => {
+    const error = { response: { status: 400, data: { message: ['uno', 'dos'] } } }
 
-    expect(rawBackendMessage(error)).toBe('uno, dos')
+    expect(normalizeHttpError(error)).toEqual({ statusCode: 400, messages: ['uno', 'dos'] })
   })
 
-  it('devuelve undefined si no hay mensaje', () => {
-    expect(rawBackendMessage(new Error('red'))).toBeUndefined()
+  it('convierte un mensaje simple en lista', () => {
+    const error = { response: { status: 409, data: { message: 'duplicado' } } }
+
+    expect(normalizeHttpError(error)).toEqual({ statusCode: 409, messages: ['duplicado'] })
+  })
+
+  it('devuelve statusCode 0 si no hubo respuesta', () => {
+    expect(normalizeHttpError(new Error('red'))).toEqual({ statusCode: 0, messages: [] })
   })
 })
