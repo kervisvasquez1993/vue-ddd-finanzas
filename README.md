@@ -1,14 +1,14 @@
-# Sistema Financiero
+# Sistema Financeiro
 
-Frontend en Vue 3 del sistema de gestión financiera. Sigue DDD + Clean Architecture: la lógica de
-negocio no depende de Vue, y todo lo específico del framework vive en `presentation/`.
+Frontend em Vue 3 do sistema de gestão financeira. Segue DDD + Clean Architecture: as regras de
+negócio não dependem do Vue, e tudo o que é específico do framework fica em `presentation/`.
 
 ## Requisitos
 
-- Node `^22.18.0` o `>=24.12.0`
-- Backend corriendo en `http://localhost:3000/api`, con las migraciones ejecutadas
+- Node `^22.18.0` ou `>=24.12.0`
+- Backend rodando em `http://localhost:3000/api`, com as migrations executadas
 
-## Puesta en marcha
+## Como executar
 
 ```bash
 npm install
@@ -16,134 +16,188 @@ cp .env.example .env
 npm run dev
 ```
 
-| Variable | Descripción |
+| Variável | Descrição |
 |---|---|
-| `VITE_API_URL` | URL base de la API |
+| `VITE_API_URL` | URL base da API |
 
 ## Scripts
 
-| Comando | Qué hace |
+| Comando | O que faz |
 |---|---|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Type-check y build de producción |
-| `npm run type-check` | Revisa los tipos con `vue-tsc` |
-| `npm run test:unit` | Tests con Vitest |
-| `npm run test:e2e` | Tests con Playwright |
-| `npm run lint` | oxlint y ESLint, con corrección automática |
-| `npm run format` | Formatea `src/` y `tests/` |
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Type-check e build de produção |
+| `npm run type-check` | Verifica os tipos com `vue-tsc` |
+| `npm run test:unit` | Testes com Vitest |
+| `npm run test:e2e` | Testes com Playwright |
+| `npm run lint` | oxlint e ESLint, com correção automática |
+| `npm run format` | Formata `src/` e `tests/` |
 
 ## Stack
 
-- Vue 3, vue-router y Pinia
-- `@tanstack/vue-query` para datos del servidor
-- VeeValidate y Zod para formularios
-- Axios detrás de un adapter en `infrastructure/api`
-- Tailwind y vue-sonner
-- Vitest y `@vue/test-utils`
+- Vue 3, vue-router e Pinia
+- `@tanstack/vue-query` para dados do servidor
+- VeeValidate e Zod para formulários
+- Axios atrás de um adapter em `infrastructure/api`
+- Tailwind e vue-sonner
+- Vitest e `@vue/test-utils`
 
-## Arquitectura
+## Arquitetura
+
+O projeto é organizado em camadas, e **as dependências sempre apontam para dentro**: as camadas
+externas conhecem as internas, nunca o contrário. Assim, o núcleo de negócio não muda quando se troca
+o framework, a biblioteca HTTP ou a API.
 
 ```
-src/
-├── domain/           Entidades, value objects, errores, DTOs y puertos. TypeScript puro.
-├── aplication/       Casos de uso. TypeScript puro.
-├── infrastructure/   Implementa los puertos: axios, actions, mappers, repositorios.
-├── di/               Conecta cada caso de uso con la implementación de su puerto.
-├── presentation/     Todo lo que depende de Vue.
-│   ├── queries/      useQuery, query keys y política de reintentos
-│   ├── mutations/    useMutation
-│   ├── composables/  Lógica de pantalla
-│   ├── components/
-│   ├── schemas/      Validación de formularios con Zod
-│   ├── stores/       Pinia, solo para estado global
-│   ├── utils/
-│   └── views/
-├── router/           Rutas y guards
-└── main.ts           Registra los plugins y conecta la sesión con la API
+┌──────────────────────────────────────────────────────────────────┐
+│  CAMADA EXTERNA: detalhes que podem mudar                        │
+│  presentation · router · infrastructure · di                     │
+│                                                                  │
+│     ┌────────────────────────────────────────────────────────┐   │
+│     │  APLICATION: casos de uso                              │   │
+│     │                                                        │   │
+│     │     ┌──────────────────────────────────────────────┐   │   │
+│     │     │  DOMAIN: regras de negócio e contratos       │   │   │
+│     │     └──────────────────────────────────────────────┘   │   │
+│     └────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### Regla de dependencias
+### O que cada camada contém
 
-| Capa | Puede importar |
+| Camada | Responsabilidade | O que contém | Depende de Vue? |
+|---|---|---|---|
+| `domain` | Regras de negócio e contratos | Entidades, value objects, erros, DTOs e portas (`ITransactionRepository`) | Não |
+| `aplication` | Orquestrar as regras | Casos de uso, como factories que recebem as portas | Não |
+| `infrastructure` | Falar com o mundo externo | Adapter do axios, actions, mappers e repositórios | Não |
+| `di` | Unir contratos e implementações | Instâncias dos casos de uso | Não |
+| `presentation` | Mostrar e interagir | Queries, mutations, composables, componentes, schemas, stores e views | Sim |
+| `router` | Navegação | Rotas e guards | Sim |
+
+Se um arquivo importa o Vue ou uma biblioteca do Vue, ele fica em `presentation/` (ou em `router/`,
+quando se trata de navegação).
+
+### Direção das dependências
+
+```
+router ──► presentation ──► di ──► aplication ──► domain
+                            │                       ▲
+                            └──► infrastructure ────┘
+```
+
+| Camada | Pode importar |
 |---|---|
 | `domain` | Nada externo |
 | `aplication` | `domain` |
-| `infrastructure` | `domain` y sus propias librerías |
+| `infrastructure` | `domain` e suas próprias bibliotecas |
 | `di` | `aplication` e `infrastructure` |
-| `presentation` | `di`, `aplication` (tipos) y `domain` |
+| `presentation` | `di`, `aplication` (tipos) e `domain` (tipos e classes de erro) |
 | `router` | `presentation` |
 
-Si un archivo importa Vue o una librería de Vue, va en `presentation`.
+`main.ts` é a exceção: por ser o ponto de partida, conhece todas as camadas.
 
-`main.ts` es la excepción: al ser el punto de arranque, conoce todas las capas.
+### Inversão de dependências
 
-### Flujo de una petición
+`aplication` depende do contrato definido em `domain`, não da implementação. Quem entrega a
+implementação é a pasta `di/`:
+
+```ts
+export const getTransactionsUseCase = getTransactionsUseCaseFactory(transactionRepository)
+```
+
+- **Inversão de dependências (o princípio):** o caso de uso conhece apenas `ITransactionRepository`.
+- **Injeção de dependências (o mecanismo):** `di/` entrega `transactionRepository` à factory. É o mesmo
+  papel dos `providers` de um módulo NestJS.
+
+### Estrutura de pastas
 
 ```
-View → composable → query/mutation → di → caso de uso → puerto ← repositorio → action → API
+src/
+├── domain/           Entidades, value objects, erros, DTOs e portas. TypeScript puro.
+├── aplication/       Casos de uso. TypeScript puro.
+├── infrastructure/   Implementa as portas: axios, actions, mappers e repositórios.
+├── di/               Conecta cada caso de uso à implementação da sua porta.
+├── presentation/     Tudo o que depende do Vue.
+│   ├── queries/      useQuery, query keys e política de novas tentativas
+│   ├── mutations/    useMutation
+│   ├── composables/  Lógica de tela
+│   ├── components/
+│   ├── schemas/      Validação de formulários com Zod
+│   ├── stores/       Pinia, apenas para estado global
+│   ├── utils/
+│   └── views/
+├── router/           Rotas e guards
+└── main.ts           Registra os plugins e conecta a sessão à API
 ```
 
-### Errores
+### Fluxo de uma requisição
 
-HTTP no sale de `infrastructure`. Los repositorios usan `toDomainError` para traducir cada fallo a un
-error de dominio, y `presentation` decide según su clase.
+```
+View → composable → query/mutation → di → caso de uso → porta ← repositório → action → API
+```
 
-| Respuesta | Error de dominio | En la UI |
+### Erros
+
+O HTTP não sai de `infrastructure`. Os repositórios usam `toDomainError` para traduzir cada falha em
+um erro de domínio, e `presentation` decide de acordo com a classe do erro.
+
+| Resposta | Erro de domínio | Na interface |
 |---|---|---|
-| `400` | `RequestValidationError` | Lista en el formulario |
-| `401` en login | `InvalidCredentialsError` | Mensaje en el formulario |
-| `401` en ruta protegida | `UnauthorizedError` | Limpia la sesión y va a login |
-| `409` en registro | `EmailAlreadyRegisteredError` | Error en el campo email |
-| `5xx` o sin respuesta | `ServiceUnavailableError` | Toast genérico. Las queries reintentan |
+| `400` | `RequestValidationError` | Lista no formulário |
+| `401` no login | `InvalidCredentialsError` | Mensagem no formulário |
+| `401` em rota protegida | `UnauthorizedError` | Limpa a sessão e vai para o login |
+| `409` no cadastro | `EmailAlreadyRegisteredError` | Erro no campo de email |
+| `5xx` ou sem resposta | `ServiceUnavailableError` | Toast genérico. As queries tentam novamente |
 
-Decide siempre por `statusCode`: el backend no tiene códigos de error estables y sus mensajes varían
-de idioma.
+Decida sempre pelo `statusCode`: o backend não tem códigos de erro estáveis e o idioma das mensagens
+varia.
 
-### Sesión
+### Sessão
 
-`publicApi` no usa interceptores; `authApi` agrega el token y reacciona al `401`. `infrastructure` no
-conoce el store: `main.ts` le inyecta los handlers con `configureApiAuth`.
+`publicApi` não usa interceptors; `authApi` adiciona o token e reage ao `401`. `infrastructure` não
+conhece o store: `main.ts` injeta os handlers com `configureApiAuth`.
 
-El token se guarda en `localStorage`, porque el backend lo devuelve en el body. No hay refresh ni
-logout en el servidor: cerrar sesión solo borra el token local.
+O token fica no `localStorage`, porque o backend o devolve no body. Não há refresh nem logout no
+servidor: encerrar a sessão apenas apaga o token local.
 
-## Agregar un módulo
+## Como adicionar um módulo
 
-1. **`domain/<module>`:** entidades, value objects, errores, DTOs y puerto del repositorio.
-2. **`infrastructure`:** interfaces del backend, mapper, actions y repositorio.
-3. **`aplication/use-cases/<module>`:** factories que reciben el puerto.
-4. **`di/<module>.ts`:** conecta cada factory con su repositorio.
-5. **`presentation`:** query o mutation, schema, composable, componentes y view.
-6. **`router/index.ts`:** ruta con import dinámico y su `meta`.
+1. **`domain/<module>`:** entidades, value objects, erros, DTOs e porta do repositório.
+2. **`infrastructure`:** interfaces do backend, mapper, actions e repositório.
+3. **`aplication/use-cases/<module>`:** factories que recebem a porta.
+4. **`di/<module>.ts`:** conecta cada factory ao seu repositório.
+5. **`presentation`:** query ou mutation, schema, composable, componentes e view.
+6. **`router/index.ts`:** rota com import dinâmico e seu `meta`.
 
-Después de una mutation, invalida las queries afectadas. Las transacciones usan
-`useInvalidateTransactionData`, porque cambian su lista, el dashboard y los totales por categoría.
+Depois de uma mutation, invalide as queries afetadas. As transações usam
+`useInvalidateTransactionData`, porque alteram a própria lista, o dashboard e os totais por categoria.
 
-## Patrones de componentes
+## Padrões de componentes
 
-| Necesidad | Patrón | Ejemplo |
+| Necessidade | Padrão | Exemplo |
 |---|---|---|
-| Estados de carga, error y vacío | `AsyncGuard` con slots | `DashboardView.vue` |
-| Lógica de pantalla | Composable | `use-login-form.ts` |
-| Extender un elemento interno | `inheritAttrs: false` + `useAttrs` | `FormField.vue` |
-| Personalizar una parte del render | Slot con nombre | `PasswordField.vue` |
-| Tabla con celdas personalizadas | `DataTable` con scoped slots `#cell-<key>` | `CategoriesView.vue` |
-| Confirmar una acción | `ConfirmDialog` + `useConfirmAction` | `CategoriesView.vue` |
-| Filtros compartibles | Estado en la URL con `computed` escribible | `use-transaction-filters.ts` |
-| Cambiar el elemento renderizado | Prop `as` con `<component :is>` | `BaseButton.vue` |
+| Estados de carregamento, erro e vazio | `AsyncGuard` com slots | `DashboardView.vue` |
+| Lógica de tela | Composable | `use-login-form.ts` |
+| Estender um elemento interno | `inheritAttrs: false` + `useAttrs` | `FormField.vue` |
+| Personalizar uma parte da renderização | Slot nomeado | `PasswordField.vue` |
+| Tabela com células personalizadas | `DataTable` com scoped slots `#cell-<key>` | `CategoriesView.vue` |
+| Confirmar uma ação | `ConfirmDialog` + `useConfirmAction` | `CategoriesView.vue` |
+| Filtros compartilháveis | Estado na URL com `computed` gravável | `use-transaction-filters.ts` |
+| Trocar o elemento renderizado | Prop `as` com `<component :is>` | `BaseButton.vue` |
 
-## Limitaciones conocidas
+## Limitações conhecidas
 
-- **Categoría de una transacción:** `PATCH /transactions/:id` responde `200` con el `categoryId` nuevo, pero no lo
-  guarda. Por eso el formulario de edición la bloquea y `getChanges` nunca la envía. Al corregirse en el backend, hay que
-  agregar `categoryId` a `IUpdateTransactionRequest` y a `getChanges`, y habilitar el campo.
-- **Búsqueda:** `%` y `_` funcionan como comodines en el backend.
+- **Categoria de uma transação:** `PATCH /transactions/:id` responde `200` com o novo `categoryId`, mas
+  não o salva. Por isso, o formulário de edição bloqueia o campo e `getChanges` nunca o envia. Quando
+  isso for corrigido no backend, adicione `categoryId` a `IUpdateTransactionRequest` e a `getChanges`,
+  e habilite o campo.
+- **Busca:** `%` e `_` funcionam como curingas no backend.
+- **Idioma:** a interface está em espanhol. Os valores usam BRL no formato `pt-BR`.
 
-## Tests
+## Testes
 
-Los tests viven en `tests/`, con la misma estructura de `src/`. Por ejemplo,
-`src/domain/shared/value-objects/date-range.vo.ts` se prueba en
+Os testes ficam em `tests/`, com a mesma estrutura de `src/`. Por exemplo,
+`src/domain/shared/value-objects/date-range.vo.ts` é testado em
 `tests/domain/shared/value-objects/date-range.vo.spec.ts`.
 
-Los casos de uso se prueban con la factory y un repositorio falso. En los tests de views se simula
-el módulo de `di`.
+Os casos de uso são testados com a factory e um repositório falso. Nos testes de views, o módulo de
+`di` é simulado.
