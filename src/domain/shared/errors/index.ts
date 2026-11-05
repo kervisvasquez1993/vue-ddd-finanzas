@@ -1,3 +1,5 @@
 export * from './domain.error'
 export * from './invalid-email.error'
 export * from './request-validation.error'
+export * from './invalid-date-range.error'
+export * from './service.errors'

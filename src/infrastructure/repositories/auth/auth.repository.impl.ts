@@ -1,9 +1,8 @@
-import { EmailAlreadyRegisteredError, InvalidCredentialsError } from '@/domain/auth/errors'
 import type { ILoginRequest, IRegisterRequest } from '@/domain/auth/dto'
+import { EmailAlreadyRegisteredError, InvalidCredentialsError } from '@/domain/auth/errors'
 import type { IAuthRepository } from '@/domain/auth/repositories'
-import { RequestValidationError } from '@/domain/shared/errors'
 import { loginAction, registerAction } from '@/infrastructure/actions/auth'
-import { normalizeHttpError } from '@/infrastructure/api/http-error'
+import { toDomainError } from '@/infrastructure/api/http-error'
 import { UserMapper } from '@/infrastructure/mappers/auth'
 
 export class AuthRepositoryImpl implements IAuthRepository {
@@ -12,10 +11,7 @@ export class AuthRepositoryImpl implements IAuthRepository {
       const { accessToken, user } = await loginAction(data)
       return { accessToken, user: UserMapper.toEntity(user) }
     } catch (error) {
-      const { statusCode, messages } = normalizeHttpError(error)
-      if (statusCode === 400) throw new RequestValidationError(messages)
-      if (statusCode === 401) throw new InvalidCredentialsError()
-      throw error
+      throw toDomainError(error, { 401: () => new InvalidCredentialsError() })
     }
   }
 
@@ -23,10 +19,7 @@ export class AuthRepositoryImpl implements IAuthRepository {
     try {
       return UserMapper.toEntity(await registerAction(data))
     } catch (error) {
-      const { statusCode, messages } = normalizeHttpError(error)
-      if (statusCode === 400) throw new RequestValidationError(messages)
-      if (statusCode === 409) throw new EmailAlreadyRegisteredError()
-      throw error
+      throw toDomainError(error, { 409: () => new EmailAlreadyRegisteredError() })
     }
   }
 }

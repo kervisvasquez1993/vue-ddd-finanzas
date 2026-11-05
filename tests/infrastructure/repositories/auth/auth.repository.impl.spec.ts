@@ -1,15 +1,22 @@
+import { AxiosError, type AxiosResponse } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { UserEntity } from '@/domain/auth/entities'
 import { EmailAlreadyRegisteredError, InvalidCredentialsError } from '@/domain/auth/errors'
-import { RequestValidationError } from '@/domain/shared/errors'
+import {
+  InvalidEmailError,
+  ServiceUnavailableError,
+  type RequestValidationError,
+} from '@/domain/shared/errors'
 import { loginAction, registerAction } from '@/infrastructure/actions/auth'
 import { AuthRepositoryImpl } from '@/infrastructure/repositories/auth'
 
 vi.mock('@/infrastructure/actions/auth')
 
-const httpError = (status: number, message: string | string[]) => ({
-  response: { status, data: { message } },
-})
+const httpError = (status: number, message: string | string[]) =>
+  new AxiosError('error', undefined, undefined, undefined, {
+    status,
+    data: { message },
+  } as AxiosResponse)
 const credentials = { email: 'ana@test.com', password: '123456' }
 const userResponse = { id: 'uuid-1', name: 'Ana', email: 'ana@test.com' }
 
@@ -51,10 +58,17 @@ describe('AuthRepositoryImpl', () => {
     } satisfies Partial<RequestValidationError>)
   })
 
-  it('deja pasar un 500 sin traducir', async () => {
-    const error = httpError(500, 'Error interno del servidor.')
-    vi.mocked(loginAction).mockRejectedValue(error)
+  it('traduce un 500 a servicio no disponible', async () => {
+    vi.mocked(loginAction).mockRejectedValue(httpError(500, 'Error interno del servidor.'))
 
-    await expect(repo.login(credentials)).rejects.toBe(error)
+    await expect(repo.login(credentials)).rejects.toBeInstanceOf(ServiceUnavailableError)
+  })
+
+  it('el error de una respuesta inválida no se confunde con HTTP', async () => {
+    vi.mocked(registerAction).mockResolvedValue({ ...userResponse, email: 'mal' })
+
+    await expect(repo.register({ ...credentials, name: 'Ana' })).rejects.toBeInstanceOf(
+      InvalidEmailError,
+    )
   })
 })

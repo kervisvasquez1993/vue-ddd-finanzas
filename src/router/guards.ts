@@ -12,5 +12,5 @@ export const authGuard: NavigationGuard = (to) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) return { name: 'login' }
-  if (to.meta.guestOnly && authStore.isAuthenticated) return { name: 'home' }
+  if (to.meta.guestOnly && authStore.isAuthenticated) return { name: 'dashboard' }
 }

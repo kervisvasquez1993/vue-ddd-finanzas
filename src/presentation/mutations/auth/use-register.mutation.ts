@@ -1,4 +1,4 @@
 import { useMutation } from '@tanstack/vue-query'
-import { registerUseCase } from '@/aplication/use-cases/auth'
+import { registerUseCase } from '@/composition/auth'
 
 export const useRegisterMutation = () => useMutation({ mutationFn: registerUseCase })

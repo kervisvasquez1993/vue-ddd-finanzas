@@ -1,8 +1,14 @@
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
-import { DomainError, RequestValidationError } from '@/domain/shared/errors'
+import {
+  DomainError,
+  RequestValidationError,
+  ServiceUnavailableError,
+} from '@/domain/shared/errors'
 
-/** Errores generales del formulario. Lo que no es de dominio (500, red) se avisa con un toast. */
+const GENERIC_ERROR = 'No pudimos completar la operación. Inténtalo de nuevo.'
+
+/** Errores generales del formulario. Lo que no depende de lo escrito se avisa con un toast. */
 export const useFormErrors = () => {
   const formErrors = ref<string[]>([])
 
@@ -13,10 +19,10 @@ export const useFormErrors = () => {
   const handleFormError = (error: unknown) => {
     if (error instanceof RequestValidationError) {
       formErrors.value = error.messages
-    } else if (error instanceof DomainError) {
+    } else if (error instanceof DomainError && !(error instanceof ServiceUnavailableError)) {
       formErrors.value = [error.message]
     } else {
-      toast.error('No pudimos completar la operación. Inténtalo de nuevo.')
+      toast.error(GENERIC_ERROR)
     }
   }
 

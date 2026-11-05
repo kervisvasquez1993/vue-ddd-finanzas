@@ -1,9 +1,10 @@
 import { useForm } from 'vee-validate'
 import { useRouter } from 'vue-router'
-import { useLoginMutation } from '@/aplication/services/mutation/auth'
+
 import { useFormErrors } from '@/presentation/composables/shared/use-form-errors'
 import { loginTypedSchema } from '@/presentation/schemas/auth'
 import { useAuthStore } from '@/presentation/stores/auth.store'
+import { useLoginMutation } from '@/presentation/mutations/auth/use-login.mutation'
 
 export const useLoginForm = () => {
   const router = useRouter()
@@ -24,7 +25,7 @@ export const useLoginForm = () => {
     mutate(values, {
       onSuccess: (session) => {
         authStore.setSession(session)
-        router.push({ name: 'home' })
+        router.push({ name: 'dashboard' })
       },
       onError: handleFormError,
     })

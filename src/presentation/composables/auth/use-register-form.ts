@@ -1,7 +1,7 @@
 import { useForm } from 'vee-validate'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { useRegisterMutation } from '@/aplication/services/mutation/auth'
+import { useRegisterMutation } from '@/presentation/mutations/auth'
 import { EmailAlreadyRegisteredError } from '@/domain/auth/errors'
 import { useFormErrors } from '@/presentation/composables/shared/use-form-errors'
 import { registerTypedSchema } from '@/presentation/schemas/auth'

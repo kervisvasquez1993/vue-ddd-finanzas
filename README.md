@@ -1,75 +1,138 @@
-# sistema-finaciero-vue
+# Sistema Financiero
 
-This template should help get you started developing with Vue 3 in Vite.
+Frontend en Vue 3 del sistema de gestión financiera. Sigue DDD + Clean Architecture: la lógica de
+negocio no depende de Vue, y todo lo específico del framework vive en `presentation/`.
 
-## Recommended IDE Setup
+## Requisitos
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Node `^22.18.0` o `>=24.12.0`
+- Backend corriendo en `http://localhost:3000/api`, con las migraciones ejecutadas
 
-This project replaces its workspace TypeScript package with [typescript-native-bridge](https://github.com/johnsoncodehk/typescript-native-bridge). Command-line tools use the bridge automatically. To use it in VS Code after installing dependencies, accept the prompt to use the workspace TypeScript version. If the prompt does not appear, run **TypeScript: Select TypeScript Version** and choose **Use Workspace Version**.
+## Puesta en marcha
 
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
+```bash
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
+cp .env.example .env
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+| Variable | Descripción |
+|---|---|
+| `VITE_API_URL` | URL base de la API |
 
-```sh
-npm run build
+## Scripts
+
+| Comando | Qué hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Type-check y build de producción |
+| `npm run type-check` | Revisa los tipos con `vue-tsc` |
+| `npm run test:unit` | Tests con Vitest |
+| `npm run test:e2e` | Tests con Playwright |
+| `npm run lint` | oxlint y ESLint, con corrección automática |
+| `npm run format` | Formatea `src/` y `tests/` |
+
+## Stack
+
+- Vue 3, vue-router y Pinia
+- `@tanstack/vue-query` para datos del servidor
+- VeeValidate y Zod para formularios
+- Axios detrás de un adapter en `infrastructure/api`
+- Tailwind y vue-sonner
+- Vitest y `@vue/test-utils`
+
+## Arquitectura
+
+```
+src/
+├── domain/           Entidades, value objects, errores, DTOs y puertos. TypeScript puro.
+├── aplication/       Casos de uso. TypeScript puro.
+├── infrastructure/   Implementa los puertos: axios, actions, mappers, repositorios.
+├── composition/      Conecta los casos de uso con sus repositorios.
+├── presentation/     Todo lo que depende de Vue.
+│   ├── queries/      useQuery, query keys y política de reintentos
+│   ├── mutations/    useMutation
+│   ├── composables/  Lógica de pantalla
+│   ├── components/
+│   ├── schemas/      Validación de formularios con Zod
+│   ├── stores/       Pinia, solo para estado global
+│   ├── utils/
+│   └── views/
+├── router/           Rutas y guards
+└── main.ts           Registra los plugins y conecta la sesión con la API
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+### Regla de dependencias
 
-```sh
-npm run test:unit
+| Capa | Puede importar |
+|---|---|
+| `domain` | Nada externo |
+| `aplication` | `domain` |
+| `infrastructure` | `domain` y sus propias librerías |
+| `composition` | `aplication` e `infrastructure` |
+| `presentation` | `composition`, `aplication` (tipos) y `domain` |
+| `router` | `presentation` |
+
+Si un archivo importa Vue o una librería de Vue, va en `presentation`.
+
+`main.ts` es la excepción: al ser el punto de arranque, conoce todas las capas.
+
+### Flujo de una petición
+
+```
+View → composable → query/mutation → composition → caso de uso → puerto ← repositorio → action → API
 ```
 
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
+### Errores
 
-```sh
-# Install browsers for the first run
-npx playwright install
+HTTP no sale de `infrastructure`. Los repositorios usan `toDomainError` para traducir cada fallo a un
+error de dominio, y `presentation` decide según su clase.
 
-# When testing on CI, must build the project first
-npm run build
+| Respuesta | Error de dominio | En la UI |
+|---|---|---|
+| `400` | `RequestValidationError` | Lista en el formulario |
+| `401` en login | `InvalidCredentialsError` | Mensaje en el formulario |
+| `401` en ruta protegida | `UnauthorizedError` | Limpia la sesión y va a login |
+| `409` en registro | `EmailAlreadyRegisteredError` | Error en el campo email |
+| `5xx` o sin respuesta | `ServiceUnavailableError` | Toast genérico. Las queries reintentan |
 
-# Runs the end-to-end tests
-npm run test:e2e
-# Runs the tests only on Chromium
-npm run test:e2e -- --project=chromium
-# Runs the tests of a specific file
-npm run test:e2e -- tests/example.spec.ts
-# Runs the tests in debug mode
-npm run test:e2e -- --debug
-```
+Decide siempre por `statusCode`: el backend no tiene códigos de error estables y sus mensajes varían
+de idioma.
 
-### Lint with [ESLint](https://eslint.org/)
+### Sesión
 
-```sh
-npm run lint
-```
+`publicApi` no usa interceptores; `authApi` agrega el token y reacciona al `401`. `infrastructure` no
+conoce el store: `main.ts` le inyecta los handlers con `configureApiAuth`.
+
+El token se guarda en `localStorage`, porque el backend lo devuelve en el body. No hay refresh ni
+logout en el servidor: cerrar sesión solo borra el token local.
+
+## Agregar un módulo
+
+1. **`domain/<module>`:** entidades, value objects, errores, DTOs y puerto del repositorio.
+2. **`infrastructure`:** interfaces del backend, mapper, actions y repositorio.
+3. **`aplication/use-cases/<module>`:** factories que reciben el puerto.
+4. **`composition/<module>.ts`:** conecta cada factory con su repositorio.
+5. **`presentation`:** query o mutation, schema, composable, componentes y view.
+6. **`router/index.ts`:** ruta con import dinámico y su `meta`.
+
+Después de una mutation, invalida las queries afectadas. Por ejemplo, crear, editar o eliminar una
+transacción debe invalidar `dashboardKeys.all`.
+
+## Patrones de componentes
+
+| Necesidad | Patrón | Ejemplo |
+|---|---|---|
+| Estados de carga, error y vacío | `AsyncGuard` con slots | `DashboardView.vue` |
+| Lógica de pantalla | Composable | `use-login-form.ts` |
+| Extender un elemento interno | `inheritAttrs: false` + `useAttrs` | `FormField.vue` |
+| Personalizar una parte del render | Slot con nombre | `PasswordField.vue` |
+
+## Tests
+
+Los tests viven en `tests/`, con la misma estructura de `src/`. Por ejemplo,
+`src/domain/shared/value-objects/date-range.vo.ts` se prueba en
+`tests/domain/shared/value-objects/date-range.vo.spec.ts`.
+
+Los casos de uso se prueban con la factory y un repositorio falso. En los tests de views se simula
+el módulo de `composition`.

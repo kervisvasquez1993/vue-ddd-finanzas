@@ -5,15 +5,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { loginUseCase, registerUseCase } from '@/aplication/use-cases/auth'
+import { loginUseCase, registerUseCase } from '@/composition/auth'
 import { UserEntity } from '@/domain/auth/entities'
 import { EmailAlreadyRegisteredError, InvalidCredentialsError } from '@/domain/auth/errors'
+import { ServiceUnavailableError } from '@/domain/shared/errors'
 import { Email } from '@/domain/shared/value-objects'
 import { useAuthStore } from '@/presentation/stores/auth.store'
 import LoginView from '@/presentation/views/auth/LoginView.vue'
 import RegisterView from '@/presentation/views/auth/RegisterView.vue'
 
-vi.mock('@/aplication/use-cases/auth')
+vi.mock('@/composition/auth')
 vi.mock('vue-sonner', () => ({
   toast: { success: vi.fn<(message: string) => void>(), error: vi.fn<(message: string) => void>() },
 }))
@@ -27,7 +28,7 @@ const mountView = async (view: Component) => {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/', name: 'home', component: stub },
+      { path: '/', name: 'dashboard', component: stub },
       { path: '/login', name: 'login', component: stub },
       { path: '/register', name: 'register', component: stub },
     ],
@@ -59,7 +60,7 @@ describe('LoginView', () => {
     expect(loginUseCase).not.toHaveBeenCalled()
   })
 
-  it('guarda la sesión y navega a home', async () => {
+  it('guarda la sesión y navega al dashboard', async () => {
     vi.mocked(loginUseCase).mockResolvedValue({ accessToken: 'jwt', user })
     const { wrapper, router } = await mountView(LoginView)
 
@@ -68,7 +69,7 @@ describe('LoginView', () => {
     await submit(wrapper)
 
     expect(useAuthStore().accessToken).toBe('jwt')
-    expect(router.currentRoute.value.name).toBe('home')
+    expect(router.currentRoute.value.name).toBe('dashboard')
   })
 
   it('muestra el error de credenciales en el formulario', async () => {
@@ -84,6 +85,18 @@ describe('LoginView', () => {
 
   it('usa un toast para errores que no son de dominio', async () => {
     vi.mocked(loginUseCase).mockRejectedValue(new Error('Network Error'))
+    const { wrapper } = await mountView(LoginView)
+
+    await wrapper.find('input[type="email"]').setValue('ana@test.com')
+    await wrapper.find('input[type="password"]').setValue('123456')
+    await submit(wrapper)
+
+    expect(toast.error).toHaveBeenCalledOnce()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('usa un toast si el servicio no está disponible', async () => {
+    vi.mocked(loginUseCase).mockRejectedValue(new ServiceUnavailableError())
     const { wrapper } = await mountView(LoginView)
 
     await wrapper.find('input[type="email"]').setValue('ana@test.com')
