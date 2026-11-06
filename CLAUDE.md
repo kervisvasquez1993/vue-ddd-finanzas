@@ -15,6 +15,8 @@ Para crear módulos usa la skill `vue-ddd-module`, que sigue esta misma estructu
 - Los repositorios traducen errores con `toDomainError`. `presentation` decide por la clase del
   error, nunca por códigos HTTP.
 - Los tests van en `tests/`, espejando `src/`.
+- ESLint hace cumplir estas reglas de capas (`eslint.config.ts`). No las desactives para resolver un
+  error: mueve el código a la capa correcta.
 
 ## Antes de terminar
 

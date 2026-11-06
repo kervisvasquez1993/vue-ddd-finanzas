@@ -189,6 +189,11 @@ router · layouts · pages ──► modules ──► shared
 `shared/` e `api/` nunca importam de `modules/`. `main.ts` é a exceção: por ser o ponto de partida,
 conhece tudo.
 
+Essas regras são verificadas pelo ESLint com `no-restricted-imports`, em `eslint.config.ts`. Se uma
+camada importar o que não deve, `npm run lint` falha com uma mensagem explicando o motivo. Os módulos
+são lidos de `src/modules/`, então um módulo novo já nasce protegido. Importações dinâmicas com
+`import()` não são verificadas.
+
 ### Inversão de dependências
 
 `aplication` depende do contrato definido em `domain`, não da implementação. Quem entrega a
